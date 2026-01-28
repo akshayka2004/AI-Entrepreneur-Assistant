@@ -2,52 +2,9 @@
 
 ## Database Schema (Entity-Relationship Diagram)
 
-```mermaid
-erDiagram
-    PROJECT ||--o{ RESEARCH_REPORT : has
-    PROJECT ||--o{ CONTENT_CALENDAR : has
-    CONTENT_CALENDAR ||--o{ CONTENT_VERSION : has
+![Database Schema](database_schema.png)
 
-    PROJECT {
-        int id PK
-        string niche
-        string audience
-        string tone
-        string goals
-    }
-
-    RESEARCH_REPORT {
-        int id PK
-        int project_id FK
-        text summary
-        json keyword_clusters
-        json competitors
-    }
-
-    CONTENT_CALENDAR {
-        int id PK
-        int project_id FK
-        string platform
-        string date
-        string content_type
-        string topic
-    }
-
-    CONTENT_VERSION {
-        int id PK
-        int calendar_id FK
-        string title
-        text body
-        int seo_score
-        int readability_score
-        int brand_score
-        int version_number
-    }
-```
-
----
-
-## Table Descriptions
+### Table Descriptions
 
 | Table | Description |
 |-------|-------------|
@@ -58,102 +15,61 @@ erDiagram
 
 ---
 
-## Data Flow Diagram (DFD) - Level 0 (Context)
-
-```mermaid
-flowchart LR
-    User((User)) --> |Project Details| System[Agentic AI Marketing Platform]
-    System --> |Content + Reports| User
-    System <--> |API Calls| OpenAI[(OpenAI API)]
-    System <--> |Store/Retrieve| DB[(SQLite DB)]
-```
-
----
-
 ## Data Flow Diagram (DFD) - Level 1
 
-```mermaid
-flowchart TB
-    subgraph External
-        User((User))
-        OpenAI[(OpenAI API)]
-        DB[(SQLite Database)]
-    end
+![DFD Level 1](dfd_level1.png)
 
-    subgraph "1.0 Project Management"
-        P1[1.1 Create Project]
-        P2[1.2 Store Project]
-    end
+### Process Descriptions
 
-    subgraph "2.0 Market Research"
-        R1[2.1 Analyze Niche]
-        R2[2.2 Generate Keywords]
-        R3[2.3 Identify Competitors]
-    end
+| Process | Description |
+|---------|-------------|
+| **1.0 Project Management** | Receives project details (niche, audience, tone, goals) from User |
+| **2.0 Market Research** | Analyzes trends, competitors, and keywords via OpenAI API |
+| **3.0 Content Strategy** | Generates 14-day content calendar based on research |
+| **4.0 Content Generation** | Creates content with WriterAgent → SEOAgent feedback loop |
 
-    subgraph "3.0 Content Strategy"
-        S1[3.1 Generate Calendar]
-        S2[3.2 Schedule Posts]
-    end
+### Data Stores
+- **SQLite Database**: Local file-based storage for all project data
 
-    subgraph "4.0 Content Generation"
-        C1[4.1 Draft Content]
-        C2[4.2 SEO Analysis]
-        C3[4.3 Feedback Loop]
-        C4[4.4 Final Scoring]
-    end
-
-    User -->|Niche, Audience, Tone| P1
-    P1 --> P2
-    P2 -->|Project Data| DB
-
-    P2 --> R1
-    R1 <-->|AI Research| OpenAI
-    R1 --> R2
-    R2 --> R3
-    R3 -->|Research Report| DB
-
-    R3 --> S1
-    S1 <-->|AI Calendar| OpenAI
-    S1 --> S2
-    S2 -->|Calendar Items| DB
-
-    S2 --> C1
-    C1 <-->|AI Writing| OpenAI
-    C1 --> C2
-    C2 -->|Score < 70| C3
-    C3 --> C1
-    C2 -->|Score >= 70| C4
-    C4 -->|Content Version| DB
-    C4 -->|Generated Content| User
-```
+### External Entities
+- **User**: Provides project details, receives generated content
+- **OpenAI API**: Provides AI research and content generation capabilities
 
 ---
 
-## Agent Workflow Diagram
+## Agent Workflow
 
-```mermaid
-flowchart LR
-    subgraph Orchestrator
-        direction TB
-        O[Orchestrator]
-    end
-
-    subgraph Agents
-        MR[MarketResearchAgent]
-        CS[ContentStrategyAgent]
-        WR[WriterAgent]
-        SEO[SEOAgent]
-        SC[ScoringAgent]
-    end
-
-    O --> MR
-    MR --> CS
-    CS --> WR
-    WR --> SEO
-    SEO -->|Score <= 70| WR
-    SEO -->|Score > 70| SC
-    SC --> O
+```
+┌─────────────────┐
+│   Orchestrator  │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ MarketResearch  │──────► Research Report
+│     Agent       │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ ContentStrategy │──────► 14-Day Calendar
+│     Agent       │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐     ┌─────────────┐
+│   WriterAgent   │◄────│  SEOAgent   │
+│   (creates)     │────►│  (scores)   │
+└────────┬────────┘     └──────┬──────┘
+         │                     │
+         │   Score < 70?       │
+         │◄────────────────────┘
+         │
+         ▼ Score >= 70
+┌─────────────────┐
+│  ScoringAgent   │──────► Final Content
+│  (final score)  │
+└─────────────────┘
 ```
 
 ---
