@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+sqlalchemy
+pydantic
+faiss-cpu
+textstat
+jinja2
+python-dotenv
+openai
+anthropic
+requests
