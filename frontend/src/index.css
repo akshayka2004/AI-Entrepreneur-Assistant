@@ -77,3 +77,94 @@
         @apply h-full rounded-full transition-all duration-500 ease-out;
     }
 }
+
+/* Light Mode Styles */
+.light-mode {
+    --bg-primary: #f8fafc;
+    --bg-secondary: #ffffff;
+    --text-primary: #1e293b;
+    --text-secondary: #475569;
+    --border-color: #e2e8f0;
+}
+
+.light-mode body {
+    background-color: #f8fafc !important;
+    background-image:
+        radial-gradient(at 0% 0%, rgba(168, 85, 247, 0.08) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(124, 58, 237, 0.08) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.04) 0px, transparent 50%);
+}
+
+.light-mode .glass-card {
+    background-color: rgba(255, 255, 255, 0.8) !important;
+    border-color: rgba(226, 232, 240, 0.8) !important;
+}
+
+.light-mode .bg-dark-950,
+.light-mode .bg-dark-900 {
+    background-color: #f8fafc !important;
+}
+
+.light-mode .bg-dark-800 {
+    background-color: #f1f5f9 !important;
+}
+
+.light-mode .bg-dark-700 {
+    background-color: #e2e8f0 !important;
+}
+
+.light-mode .text-dark-50,
+.light-mode .text-dark-100 {
+    color: #1e293b !important;
+}
+
+.light-mode .text-dark-200,
+.light-mode .text-dark-300 {
+    color: #334155 !important;
+}
+
+.light-mode .text-dark-400,
+.light-mode .text-dark-500 {
+    color: #64748b !important;
+}
+
+.light-mode .border-dark-700,
+.light-mode .border-dark-600 {
+    border-color: #e2e8f0 !important;
+}
+
+.light-mode .btn-secondary {
+    background-color: #f1f5f9;
+    color: #334155;
+    border-color: #e2e8f0;
+}
+
+.light-mode .btn-secondary:hover {
+    background-color: #e2e8f0;
+}
+
+.light-mode .input-field {
+    background-color: rgba(241, 245, 249, 0.8);
+    border-color: #e2e8f0;
+    color: #1e293b;
+}
+
+.light-mode .input-field::placeholder {
+    color: #94a3b8;
+}
+
+.light-mode ::-webkit-scrollbar-track {
+    background-color: #f1f5f9;
+}
+
+.light-mode ::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+}
+
+.light-mode ::-webkit-scrollbar-thumb:hover {
+    background-color: #94a3b8;
+}
+
+.light-mode .progress-bar {
+    background-color: #e2e8f0;
+}

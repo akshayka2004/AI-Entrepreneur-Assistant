@@ -20,8 +20,10 @@ class ResearchReport(Base):
     id = Column(Integer, primary_key=True, index=True)
     project_id = Column(Integer, ForeignKey("projects.id"))
     summary = Column(Text)
-    keyword_clusters = Column(JSON)  # Stores list of strings or dicts
-    competitors = Column(JSON)       # Stores list of strings or dicts
+    keyword_clusters = Column(JSON)  # Stores dict with primary, secondary, trending
+    competitors = Column(JSON)       # Stores list of competitor names
+    trends = Column(JSON)            # Stores list of trend strings
+    audience_insights = Column(JSON) # Stores dict with pain_points, preferences, platforms
 
     project = relationship("Project", back_populates="research_reports")
 

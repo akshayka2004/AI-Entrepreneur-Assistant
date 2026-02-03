@@ -8,4 +8,7 @@ jinja2
 python-dotenv
 openai
 anthropic
+google-generativeai
+groq
+cohere
 requests

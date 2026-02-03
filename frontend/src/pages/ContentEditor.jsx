@@ -1,14 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, CheckCircle, AlertCircle, BarChart3, Type, Heart, RefreshCw, Copy, Check } from 'lucide-react';
+import { ArrowLeft, CheckCircle, AlertCircle, BarChart3, Type, Heart, RefreshCw, Copy, Check, Sparkles, Hash, Repeat, ChevronDown } from 'lucide-react';
 
 const ContentEditor = () => {
     const { calendarId } = useParams();
     const [versions, setVersions] = useState([]);
     const [selectedVersion, setSelectedVersion] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [regenerating, setRegenerating] = useState(false);
     const [copied, setCopied] = useState(false);
+
+    // New feature states
+    const [hashtags, setHashtags] = useState([]);
+    const [loadingHashtags, setLoadingHashtags] = useState(false);
+    const [showRepurpose, setShowRepurpose] = useState(false);
+    const [repurposedContent, setRepurposedContent] = useState(null);
+    const [repurposing, setRepurposing] = useState(false);
+    const [copiedHashtags, setCopiedHashtags] = useState(false);
 
     useEffect(() => {
         fetchVersions();
@@ -28,10 +37,57 @@ const ContentEditor = () => {
         }
     };
 
-    const copyToClipboard = () => {
-        navigator.clipboard.writeText(selectedVersion.body);
+    const handleRegenerate = async () => {
+        setRegenerating(true);
+        try {
+            await api.post(`/content/${calendarId}/write`);
+            await fetchVersions();
+        } catch (error) {
+            console.error("Failed to regenerate content", error);
+            alert("Failed to regenerate content. Please try again.");
+        } finally {
+            setRegenerating(false);
+        }
+    };
+
+    const generateHashtags = async () => {
+        setLoadingHashtags(true);
+        try {
+            const res = await api.post(`/content/${calendarId}/hashtags`);
+            setHashtags(res.data.hashtags);
+        } catch (error) {
+            console.error("Failed to generate hashtags", error);
+        } finally {
+            setLoadingHashtags(false);
+        }
+    };
+
+    const repurposeContent = async (targetPlatform) => {
+        setRepurposing(true);
+        setShowRepurpose(false);
+        try {
+            const res = await api.post(`/content/${calendarId}/repurpose`, {
+                target_platform: targetPlatform
+            });
+            setRepurposedContent(res.data);
+        } catch (error) {
+            console.error("Failed to repurpose content", error);
+            alert("Failed to repurpose content. Please try again.");
+        } finally {
+            setRepurposing(false);
+        }
+    };
+
+    const copyToClipboard = (text) => {
+        navigator.clipboard.writeText(text || selectedVersion.body);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
+    };
+
+    const copyHashtags = () => {
+        navigator.clipboard.writeText(hashtags.join(' '));
+        setCopiedHashtags(true);
+        setTimeout(() => setCopiedHashtags(false), 2000);
     };
 
     const getScoreColor = (score) => {
@@ -45,6 +101,8 @@ const ContentEditor = () => {
         if (score >= 60) return 'bg-yellow-500';
         return 'bg-red-500';
     };
+
+    const platforms = ['Twitter', 'Instagram', 'LinkedIn', 'Blog', 'Facebook'];
 
     if (loading) {
         return (
@@ -81,29 +139,86 @@ const ContentEditor = () => {
                 <div className="lg:col-span-2 space-y-6">
                     <div className="glass-card overflow-hidden">
                         {/* Header */}
-                        <div className="px-6 py-4 border-b border-dark-700 flex items-center justify-between">
+                        <div className="px-6 py-4 border-b border-dark-700 flex items-center justify-between flex-wrap gap-4">
                             <div>
                                 <h3 className="text-xl font-semibold text-dark-50">
                                     {selectedVersion.title || "Generated Content"}
                                 </h3>
                                 <p className="text-dark-500 text-sm">Version {selectedVersion.version_number}</p>
                             </div>
-                            <button
-                                onClick={copyToClipboard}
-                                className="btn-secondary py-2 px-4 flex items-center gap-2 text-sm"
-                            >
-                                {copied ? (
-                                    <>
-                                        <Check className="w-4 h-4 text-green-400" />
-                                        Copied
-                                    </>
-                                ) : (
-                                    <>
-                                        <Copy className="w-4 h-4" />
-                                        Copy
-                                    </>
-                                )}
-                            </button>
+                            <div className="flex items-center gap-2 flex-wrap">
+                                {/* Regenerate Button */}
+                                <button
+                                    onClick={handleRegenerate}
+                                    disabled={regenerating}
+                                    className="btn-primary py-2 px-4 flex items-center gap-2 text-sm"
+                                >
+                                    {regenerating ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            Regenerating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Sparkles className="w-4 h-4" />
+                                            Regenerate
+                                        </>
+                                    )}
+                                </button>
+
+                                {/* Repurpose Dropdown */}
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setShowRepurpose(!showRepurpose)}
+                                        disabled={repurposing}
+                                        className="btn-secondary py-2 px-4 flex items-center gap-2 text-sm"
+                                    >
+                                        {repurposing ? (
+                                            <>
+                                                <div className="w-4 h-4 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
+                                                Converting...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Repeat className="w-4 h-4" />
+                                                Repurpose
+                                                <ChevronDown className="w-3 h-3" />
+                                            </>
+                                        )}
+                                    </button>
+                                    {showRepurpose && (
+                                        <div className="absolute top-full right-0 mt-2 w-48 bg-dark-800 border border-dark-600 rounded-xl shadow-xl z-10 overflow-hidden">
+                                            {platforms.map((platform) => (
+                                                <button
+                                                    key={platform}
+                                                    onClick={() => repurposeContent(platform)}
+                                                    className="w-full text-left px-4 py-2.5 hover:bg-dark-700 text-dark-200 text-sm transition-colors"
+                                                >
+                                                    Convert to {platform}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Copy Button */}
+                                <button
+                                    onClick={() => copyToClipboard()}
+                                    className="btn-secondary py-2 px-4 flex items-center gap-2 text-sm"
+                                >
+                                    {copied ? (
+                                        <>
+                                            <Check className="w-4 h-4 text-green-400" />
+                                            Copied
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Copy className="w-4 h-4" />
+                                            Copy
+                                        </>
+                                    )}
+                                </button>
+                            </div>
                         </div>
 
                         {/* Content */}
@@ -113,10 +228,90 @@ const ContentEditor = () => {
                             </div>
                         </div>
                     </div>
+
+                    {/* Repurposed Content */}
+                    {repurposedContent && (
+                        <div className="glass-card overflow-hidden border-accent/30">
+                            <div className="px-6 py-4 border-b border-dark-700 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <Repeat className="w-5 h-5 text-accent" />
+                                    <h3 className="font-semibold text-dark-100">
+                                        Repurposed for {repurposedContent.platform}
+                                    </h3>
+                                </div>
+                                <button
+                                    onClick={() => copyToClipboard(repurposedContent.content)}
+                                    className="btn-secondary py-1.5 px-3 flex items-center gap-2 text-sm"
+                                >
+                                    <Copy className="w-4 h-4" />
+                                    Copy
+                                </button>
+                            </div>
+                            <div className="p-6">
+                                <div className="prose prose-invert max-w-none whitespace-pre-wrap text-dark-200 leading-relaxed">
+                                    {repurposedContent.content}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
-                {/* Sidebar - Scores */}
+                {/* Sidebar */}
                 <div className="space-y-6">
+                    {/* Hashtag Generator */}
+                    <div className="glass-card p-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-semibold text-dark-100 flex items-center gap-2">
+                                <Hash className="w-5 h-5 text-accent" />
+                                Hashtags
+                            </h3>
+                            <button
+                                onClick={generateHashtags}
+                                disabled={loadingHashtags}
+                                className="text-sm text-accent hover:text-accent-light flex items-center gap-1"
+                            >
+                                {loadingHashtags ? (
+                                    <div className="w-4 h-4 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
+                                ) : (
+                                    <>
+                                        <Sparkles className="w-4 h-4" />
+                                        Generate
+                                    </>
+                                )}
+                            </button>
+                        </div>
+
+                        {hashtags.length > 0 ? (
+                            <>
+                                <div className="flex flex-wrap gap-2 mb-4">
+                                    {hashtags.map((tag, i) => (
+                                        <span key={i} className="px-2 py-1 text-sm bg-accent/10 text-accent rounded-lg">
+                                            {tag}
+                                        </span>
+                                    ))}
+                                </div>
+                                <button
+                                    onClick={copyHashtags}
+                                    className="w-full btn-secondary py-2 text-sm flex items-center justify-center gap-2"
+                                >
+                                    {copiedHashtags ? (
+                                        <>
+                                            <Check className="w-4 h-4 text-green-400" />
+                                            Copied!
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Copy className="w-4 h-4" />
+                                            Copy All Hashtags
+                                        </>
+                                    )}
+                                </button>
+                            </>
+                        ) : (
+                            <p className="text-dark-500 text-sm">Click Generate to create relevant hashtags for this content.</p>
+                        )}
+                    </div>
+
                     {/* Quality Scores */}
                     <div className="glass-card p-6">
                         <h3 className="text-lg font-semibold text-dark-100 mb-6 flex items-center gap-2">
@@ -189,7 +384,7 @@ const ContentEditor = () => {
                                 <div>
                                     <h4 className="font-semibold text-green-400 mb-1">Ready to Publish</h4>
                                     <p className="text-dark-400 text-sm">
-                                        This content meets all quality thresholds and is optimized for engagement.
+                                        Content meets quality thresholds.
                                     </p>
                                 </div>
                             </div>
@@ -201,7 +396,7 @@ const ContentEditor = () => {
                                 <div>
                                     <h4 className="font-semibold text-yellow-400 mb-1">Needs Improvement</h4>
                                     <p className="text-dark-400 text-sm">
-                                        Consider running the Auto-Write again for a higher quality output.
+                                        Try regenerating for better quality.
                                     </p>
                                 </div>
                             </div>
@@ -220,8 +415,8 @@ const ContentEditor = () => {
                                         key={v.id}
                                         onClick={() => setSelectedVersion(v)}
                                         className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-200 ${selectedVersion?.id === v.id
-                                                ? 'bg-accent/10 border border-accent/30'
-                                                : 'bg-dark-800/50 hover:bg-dark-800'
+                                            ? 'bg-accent/10 border border-accent/30'
+                                            : 'bg-dark-800/50 hover:bg-dark-800'
                                             }`}
                                     >
                                         <p className="text-dark-200 font-medium">Version {v.version_number}</p>

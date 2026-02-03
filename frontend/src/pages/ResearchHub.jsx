@@ -19,6 +19,27 @@ const ResearchHub = () => {
         fetchProjectData();
     }, [projectId]);
 
+    // Load existing research on page load
+    const loadExistingResearch = async () => {
+        try {
+            const response = await api.get(`/projects/${projectId}/research`);
+            const data = response.data;
+            setResearchData({
+                competitors: data.competitors || [],
+                trends: data.trends || [],
+                keywords: data.keyword_clusters?.primary || [],
+                summary: data.summary || '',
+                audience_insights: data.audience_insights || {}
+            });
+            setResearchComplete(true);
+        } catch (error) {
+            // 404 means no research yet - that's okay
+            if (error.response?.status !== 404) {
+                console.error("Error loading research:", error);
+            }
+        }
+    };
+
     const fetchProjectData = async () => {
         try {
             const projRes = await api.get(`/projects/${projectId}`);
@@ -28,20 +49,26 @@ const ResearchHub = () => {
         }
     };
 
+    // Separate effect to load research after project is loaded
+    useEffect(() => {
+        if (project && projectId) {
+            loadExistingResearch();
+        }
+    }, [project]);
+
     const runResearch = async () => {
         setLoading(true);
         try {
-            await api.post(`/projects/${projectId}/research`);
+            const response = await api.post(`/projects/${projectId}/research`);
             setResearchComplete(true);
-            // Mock data for display
+            // Use real AI-generated data from API response
+            const data = response.data.research_data;
             setResearchData({
-                competitors: ['Nykaa Fashion', 'Bewakoof', 'The Souled Store'],
-                trends: [
-                    'Sustainability in fashion',
-                    'Made-in-India movement',
-                    'Festive collections trending'
-                ],
-                keywords: ['sustainable fashion india', 'ethnic wear online', 'diwali collection 2024', 'workwear for women']
+                competitors: data.competitors || [],
+                trends: data.trends || [],
+                keywords: data.keyword_clusters?.primary || [],
+                summary: data.summary || '',
+                audience_insights: data.audience_insights || {}
             });
         } catch (error) {
             console.error(error);

@@ -40,7 +40,9 @@ class Orchestrator:
                 project_id=project.id,
                 summary=research_data.get("summary", ""),
                 keyword_clusters=research_data.get("keyword_clusters", {}),
-                competitors=research_data.get("competitors", [])
+                competitors=research_data.get("competitors", []),
+                trends=research_data.get("trends", []),
+                audience_insights=research_data.get("audience_insights", {})
             )
             db.add(report)
             db.commit()
@@ -83,7 +85,8 @@ class Orchestrator:
             return {
                 "status": "started", 
                 "research_id": report.id, 
-                "calendar_size": len(calendar_data)
+                "calendar_size": len(calendar_data),
+                "research_data": research_data
             }
 
         finally:
@@ -94,6 +97,7 @@ class Orchestrator:
         Generate content with SEO feedback loop.
         This implements the core agentic behavior where the WriterAgent
         iteratively improves content based on SEOAgent feedback.
+        When regenerating, passes previous version data for improvement.
         """
         print(f"[Orchestrator] Generating content for Calendar ID {calendar_id}")
         db = self.get_db()
@@ -116,12 +120,28 @@ class Orchestrator:
                     "summary": research_report.summary
                 }
             
+            # Fetch previous version for improvement (if regenerating)
+            previous_version = None
+            latest_version = db.query(ContentVersion).filter(
+                ContentVersion.calendar_id == calendar_id
+            ).order_by(ContentVersion.version_number.desc()).first()
+            
+            if latest_version:
+                print(f"[Orchestrator] Found previous version (v{latest_version.version_number}, score: {latest_version.seo_score})")
+                previous_version = {
+                    "score": latest_version.seo_score,
+                    "readability": latest_version.readability_score,
+                    "brand_score": latest_version.brand_score,
+                    "content": latest_version.body[:500],  # First 500 chars for context
+                    "feedback": f"Previous score was {latest_version.seo_score}. Readability was {latest_version.readability_score}. Target: 85+ on both."
+                }
+            
             # Initial Draft with full context
             topic = calendar_item.topic
             tone = project.tone
             platform = calendar_item.platform
             
-            print(f"[Orchestrator] Creating initial draft...")
+            print(f"[Orchestrator] Creating {'improved' if previous_version else 'initial'} draft...")
             print(f"[Orchestrator] Topic: {topic}")
             print(f"[Orchestrator] Platform: {platform}, Tone: {tone}")
             
@@ -129,7 +149,8 @@ class Orchestrator:
                 topic=topic, 
                 tone=tone, 
                 platform=platform,
-                research_context=research_context
+                research_context=research_context,
+                previous_version=previous_version
             )
             
             # Feedback Loop (Max 3 iterations)
